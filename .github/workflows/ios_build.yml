@@ -96,12 +96,13 @@ jobs:
           </plist>
           EOF
 
-      - name: Instalar dependencias y sincronizar CocoaPods
+      - name: Generar configuración e instalar CocoaPods
         run: |
           cd mobile
           flutter pub get
+          flutter build ios --config-only
           cd ios
-          pod install --repo-update
+          pod install
           cd ..
 
       - name: Compilar iOS (No-Sign / Prueba)
