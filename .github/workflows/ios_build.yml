@@ -95,12 +95,10 @@ jobs:
           </plist>
           EOF
 
-      - name: Instalar dependencias de Flutter y CocoaPods
+      - name: Instalar dependencias de Flutter
         run: |
           cd mobile
           flutter pub get
-          cd ios
-          pod install
 
       - name: Compilar iOS (No-Sign / Prueba)
         run: |
