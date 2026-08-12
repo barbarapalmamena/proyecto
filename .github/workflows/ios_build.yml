@@ -28,12 +28,13 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generar plantilla Xcode de iOS nativo
+      - name: Generar plantilla limpia de iOS nativo Xcode
         run: |
           cd mobile
+          rm -rf ios
           flutter create --platforms=ios --org com.puertomontt .
 
-      - name: Restaurar Info.plist personalizado con permisos
+      - name: Configurar Info.plist con permisos de GPS y llamadas
         run: |
           cat << 'EOF' > mobile/ios/Runner/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
@@ -95,10 +96,13 @@ jobs:
           </plist>
           EOF
 
-      - name: Instalar dependencias de Flutter
+      - name: Instalar dependencias y sincronizar CocoaPods
         run: |
           cd mobile
           flutter pub get
+          cd ios
+          pod install --repo-update
+          cd ..
 
       - name: Compilar iOS (No-Sign / Prueba)
         run: |
