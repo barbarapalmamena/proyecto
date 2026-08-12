@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configurar Java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -28,10 +28,79 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Instalar dependencias de Flutter
+      - name: Generar plantilla Xcode de iOS nativo
+        run: |
+          cd mobile
+          flutter create --platforms=ios --org com.puertomontt .
+
+      - name: Restaurar Info.plist personalizado con permisos
+        run: |
+          cat << 'EOF' > mobile/ios/Runner/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+          	<key>CFBundleDevelopmentRegion</key>
+          	<string>$(DEVELOPMENT_LANGUAGE)</string>
+          	<key>CFBundleDisplayName</key>
+          	<string>Puerto Montt Alerta Urbano</string>
+          	<key>CFBundleExecutable</key>
+          	<string>$(EXECUTABLE_NAME)</string>
+          	<key>CFBundleIdentifier</key>
+          	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+          	<key>CFBundleInfoDictionaryVersion</key>
+          	<string>6.0</string>
+          	<key>CFBundleName</key>
+          	<string>puertomontt_app</string>
+          	<key>CFBundlePackageType</key>
+          	<string>APPL</string>
+          	<key>CFBundleShortVersionString</key>
+          	<string>$(FLUTTER_BUILD_NAME)</string>
+          	<key>CFBundleSignature</key>
+          	<string>????</string>
+          	<key>CFBundleVersion</key>
+          	<string>$(FLUTTER_BUILD_NUMBER)</string>
+          	<key>LSRequiresIPhoneOS</key>
+          	<true/>
+          	<key>UILaunchStoryboardName</key>
+          	<string>LaunchScreen</string>
+          	<key>UIMainStoryboardFile</key>
+          	<string>Main</string>
+          	<key>UISupportedInterfaceOrientations</key>
+          	<array>
+          		<string>UIInterfaceOrientationPortrait</string>
+          		<string>UIInterfaceOrientationLandscapeLeft</string>
+          		<string>UIInterfaceOrientationLandscapeRight</string>
+          	</array>
+          	<key>CADisableMinimumFrameDurationOnPhone</key>
+          	<true/>
+          	<key>UIApplicationSupportsIndirectInputEvents</key>
+          	<true/>
+          	<key>NSLocationWhenInUseUsageDescription</key>
+          	<string>Puerto Montt Alerta Urbano requiere acceso a tu ubicación para mostrar tu posición en el mapa y permitirte reportar incidentes urbanos cercanos.</string>
+          	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+          	<string>Puerto Montt Alerta Urbano requiere acceso a tu ubicación para notificar alertas de emergencia en tu zona.</string>
+          	<key>LSApplicationQueriesSchemes</key>
+          	<array>
+          		<string>tel</string>
+          		<string>https</string>
+          		<string>http</string>
+          	</array>
+          	<key>NSAppTransportSecurity</key>
+          	<dict>
+          		<key>NSAllowsArbitraryLoads</key>
+          		<true/>
+          	</dict>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Instalar dependencias de Flutter y CocoaPods
         run: |
           cd mobile
           flutter pub get
+          cd ios
+          pod install
 
       - name: Compilar iOS (No-Sign / Prueba)
         run: |
