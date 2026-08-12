@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puerto Montt Alerta - App Colaborativa de Incidentes Urbanos</title>
+    <!-- Leaflet CSS & JS para Mapa Interactivo de Puerto Montt -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #1E88E5;
+            --primary-dark: #1565C0;
+            --danger: #E53935;
+            --warning: #FB8C00;
+            --success: #43A047;
+            --dark: #0F172A;
+            --light-bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Contenedor Mockup de Teléfono Móvil */
+        .phone-mockup {
+            width: 390px;
+            height: 780px;
+            background: #000;
+            border-radius: 48px;
+            padding: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 12px #334155;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .notch {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 24px;
+            background: #000;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            z-index: 9999;
+        }
+
+        .app-screen {
+            background: var(--light-bg);
+            flex: 1;
+            border-radius: 36px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* App Bar */
+        .app-header {
+            background: var(--primary);
+            color: white;
+            padding: 40px 16px 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .app-header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-header .status-badge {
+            background: rgba(255,255,255,0.2);
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        /* Tab Views */
+        .tab-content {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* Map Container */
+        #map {
+            width: 100%;
+            height: 280px;
+            z-index: 1;
+        }
+
+        /* Incident Cards Section */
+        .incident-list {
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .list-header h2 {
+            font-size: 14px;
+            color: #334155;
+        }
+
+        .incident-card {
+            background: white;
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            border-left: 4px solid var(--danger);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .incident-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: #FEE2E2;
+            color: var(--danger);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .incident-details h3 {
+            font-size: 13px;
+            color: #0F172A;
+            margin-bottom: 2px;
+        }
+
+        .incident-details p {
+            font-size: 11px;
+            color: #64748B;
+            margin-bottom: 6px;
+        }
+
+        .incident-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 10px;
+            color: #94A3B8;
+        }
+
+        /* Emergency Contacts Tab */
+        .emergency-banner {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            padding: 12px;
+            margin: 12px;
+            border-radius: 12px;
+            color: #991B1B;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .emergency-card {
+            background: white;
+            margin: 0 12px 10px 12px;
+            padding: 14px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+
+        .emergency-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .emergency-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .call-btn {
+            background: #22C55E;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: absolute;
+            bottom: 70px;
+            right: 16px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 13px;
+            box-shadow: 0 4px 14px rgba(229, 57, 53, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 999;
+        }
+
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            background: white;
+            height: 60px;
+            display: flex;
+            border-top: 1px solid #E2E8F0;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            color: #94A3B8;
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item i {
+            font-size: 16px;
+        }
+
+        /* Modal Formulario Reporte */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            display: none;
+            justify-content: flex-end;
+            flex-direction: column;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-body {
+            background: white;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px;
+            max-height: 85%;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-mockup">
+        <div class="notch"></div>
+        
+        <div class="app-screen">
+            <!-- App Header -->
+            <div class="app-header">
+                <h1><i class="fa-solid fa-location-dot"></i> Puerto Montt Alerta</h1>
+                <span class="status-badge" id="apiStatus"><i class="fa-solid fa-signal"></i> API Conectada</span>
+            </div>
+
+            <!-- TAB 1: MAPA Y ALERTAS EN VIVO -->
+            <div class="tab-content active" id="tabMap">
+                <div id="map"></div>
+                <div class="incident-list">
+                    <div class="list-header">
+                        <h2>Reportes Activos (Puerto Montt)</h2>
+                        <span style="font-size: 10px; color: #64748B;">Radio: 5 km</span>
+                    </div>
+                    <div id="incidentsContainer">
+                        <!-- Incidentes dinámicos -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CENTRALES DE EMERGENCIA -->
+            <div class="tab-content" id="tabEmergency">
+                <div class="emergency-banner">
+                    <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
+                    <span>Líneas directas de emergencia para la comuna de Puerto Montt.</span>
+                </div>
+                <div id="emergencyContainer">
+                    <!-- Contactos de emergencia dinámicos -->
+                </div>
+            </div>
+
+            <!-- TAB 3: HISTORIAL -->
+            <div class="tab-content" id="tabHistory">
+                <div class="incident-list" style="padding-top: 16px;">
+                    <h2 style="font-size: 14px; margin-bottom: 12px;">Historial de Reportes Urbanos</h2>
+                    <div id="historyContainer"></div>
+                </div>
+            </div>
+
+            <!-- Botón Flotante para Reportar -->
+            <button class="fab" onclick="openModal()">
+                <i class="fa-solid fa-circle-plus fa-lg"></i> REPORTAR INCIDENTE
+            </button>
+
+            <!-- Bottom Navigation Bar -->
+            <div class="bottom-nav">
+                <div class="nav-item active" onclick="switchTab('tabMap', this)">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    <span>Mapa y Alertas</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('tabEmergency', this)">
+                    <i class="fa-solid fa-phone-volume"></i>
+                    <span>Emergencias</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('tabHistory', this)">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Historial</span>
+                </div>
+            </div>
+
+            <!-- Modal Formulario de Reporte -->
+            <div class="modal" id="reportModal">
+                <div class="modal-body">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h2 style="font-size: 15px; color: #0F172A;">Nuevo Reporte Urbano</h2>
+                        <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal()"></i>
+                    </div>
+                    <form id="incidentForm" onsubmit="submitReport(event)">
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select class="form-control" id="catSelect">
+                                <option value="1">Accidente de Tránsito</option>
+                                <option value="2">Seguridad y Delitos</option>
+                                <option value="3">Mascotas Perdidas</option>
+                                <option value="4">Falla de Infraestructura</option>
+                                <option value="5">Basura y Escombros</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Título del Incidente</label>
+                            <input type="text" class="form-control" id="titleInput" placeholder="Ej: Semáforo apagado en Urmeneta" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción</label>
+                            <textarea class="form-control" id="descInput" rows="3" placeholder="Detalle lo sucedido y punto de referencia..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección / Referencia en Puerto Montt</label>
+                            <input type="text" class="form-control" id="addressInput" placeholder="Ej: Urmeneta esq. San Martín" required>
+                        </div>
+                        <button type="submit" class="btn-submit">ENVIAR ALERTA COMUNITARIA</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+        let map, markersGroup;
+
+        // Datos iniciales de respaldo por si el servidor backend se reinicia
+        const mockIncidents = [
+            { id: 1, title: 'Semáforo apagado en intersección crítica', description: 'El semáforo de Urmeneta con San Martín está apagado.', category_name: 'Falla de Infraestructura', lat: -41.4720, lon: -72.9425, address: 'Urmeneta esq. San Martín', status: 'reported' },
+            { id: 2, title: 'Accidente menor en costanera', description: 'Colisión por alcance cerca de Av. Diego Portales.', category_name: 'Accidente de Tránsito', lat: -41.4745, lon: -72.9350, address: 'Av. Diego Portales 800', status: 'in_progress' },
+            { id: 3, title: 'Perro mestizo extraviado', description: 'Perro mestizo café con collar azul visto en Angelmó.', category_name: 'Mascotas Perdidas', lat: -41.4810, lon: -72.9610, address: 'Feria Angelmó', status: 'reported' }
+        ];
+
+        const mockEmergencies = [
+            { name: 'Carabineros de Chile', code: '133', phone: '133', color: '#1B5E20', icon: 'fa-user-shield' },
+            { name: 'Cuerpo de Bomberos', code: '132', phone: '132', color: '#B71C1C', icon: 'fa-fire-extinguisher' },
+            { name: 'SAMU - Atención Médica', code: '131', phone: '131', color: '#0D47A1', icon: 'fa-truck-medical' },
+            { name: 'Seguridad Ciudadana', code: '800 800 133', phone: '+56652261000', color: '#E65100', icon: 'fa-shield-halved' }
+        ];
+
+        window.onload = function() {
+            initMap();
+            loadIncidents();
+            loadEmergencies();
+        };
+
+        function initMap() {
+            // Inicializar Leaflet centrado en la Plaza de Armas de Puerto Montt
+            map = L.map('map').setView([-41.4693, -72.9424], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            markersGroup = L.layerGroup().addTo(map);
+        }
+
+        async function loadIncidents() {
+            let data = mockIncidents;
+            try {
+                const res = await fetch(`${API_URL}/incidents/`);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.length > 0) {
+                        data = json.map(item => ({
+                            id: item.id,
+                            title: item.title,
+                            description: item.description,
+                            category_name: item.category.name,
+                            lat: item.latitude,
+                            lon: item.longitude,
+                            address: item.address_reference,
+                            status: item.status
+                        }));
+                    }
+                }
+            } catch (e) {
+                console.log('Usando datos demostrativos en cliente.');
+            }
+
+            renderIncidents(data);
+        }
+
+        function renderIncidents(list) {
+            markersGroup.clearLayers();
+            const container = document.getElementById('incidentsContainer');
+            const historyContainer = document.getElementById('historyContainer');
+            container.innerHTML = '';
+            historyContainer.innerHTML = '';
+
+            list.forEach(inc => {
+                // Agregar marcador al mapa de Puerto Montt
+                const marker = L.marker([inc.lat, inc.lon]).addTo(markersGroup);
+                marker.bindPopup(`<b>${inc.title}</b><br>${inc.address}`);
+
+                // Renderizar Tarjeta de Incidente
+                const card = document.createElement('div');
+                card.className = 'incident-card';
+                card.innerHTML = `
+                    <div class="incident-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="incident-details" style="flex:1;">
+                        <h3>${inc.title}</h3>
+                        <p>${inc.description}</p>
+                        <div class="incident-meta">
+                            <span><i class="fa-solid fa-location-dot"></i> ${inc.address}</span>
+                            <span style="color: var(--danger); font-weight: 700;">${inc.status.toUpperCase()}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+                historyContainer.appendChild(card.cloneNode(true));
+            });
+        }
+
+        function loadEmergencies() {
+            const container = document.getElementById('emergencyContainer');
+            container.innerHTML = '';
+
+            mockEmergencies.forEach(em => {
+                const card = document.createElement('div');
+                card.className = 'emergency-card';
+                card.innerHTML = `
+                    <div class="emergency-info">
+                        <div class="emergency-avatar" style="background: ${em.color};">
+                            <i class="fa-solid ${em.icon}"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 13px; color: #0F172A;">${em.name}</h3>
+                            <p style="font-size: 11px; color: #64748B;">Línea Directa Puerto Montt</p>
+                        </div>
+                    </div>
+                    <button class="call-btn" onclick="alert('Llamando a ${em.name} (${em.phone})...')">
+                        <i class="fa-solid fa-phone"></i> ${em.code}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+            if (tabId === 'tabMap') {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        }
+
+        function openModal() {
+            document.getElementById('reportModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('reportModal').classList.remove('active');
+        }
+
+        async function submitReport(e) {
+            e.preventDefault();
+            const title = document.getElementById('titleInput').value;
+            const desc = document.getElementById('descInput').value;
+            const address = document.getElementById('addressInput').value;
+            const catId = parseInt(document.getElementById('catSelect').value);
+
+            // Generar nuevo reporte
+            const newReport = {
+                id: Date.now(),
+                title: title,
+                description: desc,
+                category_name: 'Reporte Ciudadano',
+                lat: -41.4693 + (Math.random() - 0.5) * 0.01,
+                lon: -72.9424 + (Math.random() - 0.5) * 0.01,
+                address: address,
+                status: 'reported'
+            };
+
+            mockIncidents.unshift(newReport);
+            renderIncidents(mockIncidents);
+            closeModal();
+
+            alert('¡Alerta de incidente publicada exitosamente en Puerto Montt!');
+        }
+    </script>
+</body>
+</html>

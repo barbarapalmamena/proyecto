@@ -1,0 +1,36 @@
+# Python & Virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# Variables de entorno y llaves
+.env
+*.pem
+*.key
+
+# Docker & Datos local
+mysql_data/
+*.log
+
+# Flutter & Dart
+mobile/.dart_tool/
+mobile/.pub-cache/
+mobile/.pub/
+mobile/build/
+mobile/ios/Flutter/App.framework
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+mobile/ios/Flutter/Generated.xcconfig
+mobile/app.*
+
+# IDEs y Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
